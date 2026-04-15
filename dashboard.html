@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speed-Sync | Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+    /* ══════════════════════════════════════
+       TOKENS — DARK É O PADRÃO
+    ══════════════════════════════════════ */
+    :root {
+        --bg:  #060709;
+        --s0:  #0a0c10;
+        --s1:  #0e1117;
+        --s2:  #13181f;
+        --s3:  #181e27;
+        --s4:  #1e2535;
+
+        --b0: rgba(255,255,255,0.03);
+        --b1: rgba(255,255,255,0.07);
+        --b2: rgba(255,255,255,0.13);
+
+        --t0: #eef1f5;
+        --t1: #7a8494;
+        --t2: #3e4755;
+
+        --accent:     #4f8ef7;
+        --accent-lo:  rgba(79,142,247,0.09);
+        --accent-mid: rgba(79,142,247,0.18);
+        --accent-glo: rgba(79,142,247,0.30);
+
+        --green:    #22c55e;
+        --green-lo: rgba(34,197,94,0.09);
+        --red:      #ef4444;
+        --red-lo:   rgba(239,68,68,0.09);
+        --amber:    #f59e0b;
+        --amber-lo: rgba(245,158,11,0.09);
+
+        --sw: 248px;
+        --sc: 66px;
+        --r:  10px;
+        --ease: cubic-bezier(0.4,0,0.2,1);
+        --mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="light"] {
+        --bg:  #f0f3f7;
+        --s0:  #f8f9fb;
+        --s1:  #ffffff;
+        --s2:  #edf1f6;
+        --s3:  #e3e8f0;
+        --s4:  #d6dce8;
+        --b0:  rgba(0,0,0,0.03);
+        --b1:  rgba(0,0,0,0.07);
+        --b2:  rgba(0,0,0,0.13);
+        --t0:  #0d1117;
+        --t1:  #566070;
+        --t2:  #9aa3b0;
+        --accent-lo:  rgba(79,142,247,0.07);
+        --accent-mid: rgba(79,142,247,0.14);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background: var(--bg);
+        color: var(--t0);
+        min-height: 100vh;
+        overflow-x: hidden;
+        transition: background .3s var(--ease), color .3s var(--ease);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grain overlay sutil */
+    body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 9997;
+        opacity: .35;
+    }
+
+    /* ══════════════════════════════════════
+       LOADING
+    ══════════════════════════════════════ */
+    #loadingOverlay {
+        position: fixed; inset: 0;
+        background: var(--bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        z-index: 9999;
+        transition: opacity .5s var(--ease);
+    }
+
+    .ld-ring {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .ld-ring::before {
+        content: '';
+        position: absolute; inset: 0;
+        border-radius: 50%;
+        border: 2px solid var(--b2);
+        border-top-color: var(--accent);
+        animation: spin 1s linear infinite;
+        box-shadow: 0 0 16px var(--accent-glo);
+    }
+
+    .ld-ring::after {
+        content: '';
+        position: absolute; inset: 10px;
+        border-radius: 50%;
+        border: 1.5px solid var(--b1);
+        border-bottom-color: rgba(79,142,247,.4);
+        animation: spin .7s linear infinite reverse;
+    }
+
+    .ld-ring i {
+        font-size: 20px;
+        color: var(--accent);
+        filter: drop-shadow(0 0 6px var(--accent-glo));
+        z-index: 1;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .ld-name {
+        font-size: 17px;
+        font-weight: 700;
+        letter-spacing: -.3px;
+        color: var(--t0);
+    }
+    .ld-name em { font-style: normal; color: var(--accent); }
+
+    .ld-track {
+        width: 140px; height: 2px;
+        background: var(--s4);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .ld-track::after {
+        content: '';
+        display: block;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        animation: sweep 1.5s ease-in-out infinite;
+        box-shadow: 0 0 10px var(--accent-glo);
+    }
+
+    @keyframes sweep { 0%{margin-left:-50%} 100%{margin-left:140%} }
+
+    .ld-lbl {
+        font-family: var(--mono);
+        font-size: 9.5px;
+        color: var(--t2);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        animation: blink 1.8s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:.9} }
+
+    /* ══════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════ */
+    .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(6,7,9,.90);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        padding: 20px;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal-box {
+        background: var(--s1);
+        border: 1px solid var(--b2);
+        border-radius: 16px;
+        width: 100%; max-width: 420px;
+        overflow: hidden;
+        box-shadow: 0 48px 96px rgba(0,0,0,.7), 0 0 0 1px var(--b0);
+        animation: mpop .22s var(--ease);
+    }
+
+    @keyframes mpop {
+        from { opacity:0; transform: scale(.94) translateY(12px); }
+        to   { opacity:1; transform: scale(1)   translateY(0); }
+    }
+
+    .modal-stripe { height: 2px; background: linear-gradient(90deg, var(--accent) 0%, transparent 80%); }
+    .modal-inner  { padding: 26px 26px 22px; }
+
+    .modal-head {
+        display: flex; align-items: center; gap: 13px;
+        margin-bottom: 13px;
+    }
+
+    .modal-ico {
+        width: 42px; height: 42px;
+        border-radius: 9px;
+        background: var(--accent-lo);
+        border: 1px solid var(--accent-mid);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent);
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .modal-head h3 { font-size: 16px; font-weight: 700; }
+
+    .modal-body {
+        color: var(--t1);
+        font-size: 13.5px;
+        line-height: 1.7;
+        margin-bottom: 22px;
+    }
+
+    .modal-foot { display: flex; gap: 9px; }
+    .modal-foot button { flex: 1; }
+
+    /* ══════════════════════════════════════
+       MOBILE NAV
+    ══════════════════════════════════════ */
+    .mobile-topbar {
+        display: none;
+        position: fixed; top: 0; left: 0; right: 0;
+        height: 54px;
+        background: var(--s0);
+        border-bottom: 1px solid var(--b1);
+        align-items: center;
+        padding: 0 14px;
+        gap: 11px;
+        z-index: 1100;
+    }
+
+    /* ══════════════════════════════════════
+       AUTH
+    ══════════════════════════════════════ */
+    .auth-wrap {
+        min-height: 100vh;
+        display: flex;
+        align-items: stretch;
+    }
+
+    /* Lado decorativo */
+    .auth-left {
+        flex: 1;
+        background: var(--s0);
+        border-right: 1px solid var(--b1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 40px;
+    }
+
+    .auth-grid-bg {
+        position: absolute; inset: -80px;
+        background-image:
+            linear-gradient(var(--b1) 1px, transparent 1px),
+            linear-gradient(90deg, var(--b1) 1px, transparent 1px);
+        background-size: 44px 44px;
+        animation: gridmove 30s linear infinite;
+        opacity: .7;
+    }
+
+    @keyframes gridmove {
+        from { transform: translate(0,0); }
+        to   { transform: translate(44px,44px); }
+    }
+
+    .auth-glow-orb {
+        position: absolute;
+        width: 480px; height: 480px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(79,142,247,.05) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .auth-left-content {
+        position: relative; z-index: 1;
+        text-align: center;
+        max-width: 360px;
+    }
+
+    /* Anel giratório */
+    .auth-emblem {
+        width: 130px; height: 130px;
+        border-radius: 50%;
+        border: 1px solid var(--b2);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 32px;
+        position: relative;
+    }
+
+    .auth-emblem::before {
+        content: '';
+        position: absolute; inset: -10px;
+        border-radius: 50%;
+        border: 1.5px solid transparent;
+        border-top-color: var(--accent);
+        border-right-color: rgba(79,142,247,.2);
+        animation: spin 3.5s linear infinite;
+    }
+
+    .auth-emblem::after {
+        content: '';
+        position: absolute; inset: -20px;
+        border-radius: 50%;
+        border: 1px solid transparent;
+        border-bottom-color: rgba(79,142,247,.1);
+        animation: spin 6s linear infinite reverse;
+    }
+
+    .auth-emblem-core {
+        width: 74px; height: 74px;
+        border-radius: 50%;
+        background: var(--s2);
+        border: 1px solid var(--b2);
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    .auth-emblem-core i {
+        font-size: 28px;
+        color: var(--accent);
+        filter: drop-shadow(0 0 14px var(--accent-glo));
+    }
+
+    .auth-left-content h2 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 9px; }
+    .auth-left-content p  { font-size: 13px; color: var(--t1); line-height: 1.75; }
+
+    .auth-metrics {
+        display: flex; gap: 10px;
+        margin-top: 30px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .am {
+        background: var(--s2);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 12px 16px;
+        text-align: center;
+        min-width: 80px;
+    }
+
+    .am-v { font-family: var(--mono); font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 3px; }
+    .am-l { font-size: 9.5px; color: var(--t2); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* Painel de login */
+    .auth-right {
+        width: 390px;
+        flex-shrink: 0;
+        background: var(--s1);
+        border-left: 1px solid var(--b1);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 52px 40px;
+        position: relative;
+    }
+
+    .auth-right::before {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent) 0%, transparent 65%);
+    }
+
+    .auth-logotype {
+        display: flex; align-items: center; gap: 10px;
+        margin-bottom: 40px;
+    }
+
+    .auth-li {
+        width: 36px; height: 36px;
+        border-radius: 9px;
+        background: var(--accent-lo);
+        border: 1px solid var(--accent-mid);
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent);
+        font-size: 15px;
+    }
+
+    .auth-logotype img.custom-logo { max-height: 28px; }
+    .auth-logo-name { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+
+    .auth-h { font-size: 24px; font-weight: 800; letter-spacing: -.6px; margin-bottom: 5px; }
+    .auth-p { font-size: 13px; color: var(--t1); margin-bottom: 28px; }
+
+    /* Campos */
+    .field { margin-bottom: 15px; }
+
+    .field label {
+        display: block;
+        font-size: 10.5px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .8px;
+        color: var(--t1); margin-bottom: 7px;
+    }
+
+    .fw { position: relative; }
+    .fw .fi {
+        position: absolute; left: 12px; top: 50%;
+        transform: translateY(-50%);
+        color: var(--t2); font-size: 12px;
+        pointer-events: none;
+        transition: color .2s;
+    }
+    .fw:focus-within .fi { color: var(--accent); }
+
+    input, select {
+        width: 100%;
+        background: var(--s2);
+        border: 1px solid var(--b1);
+        border-radius: 8px;
+        color: var(--t0);
+        font-size: 14px;
+        font-family: 'Inter', sans-serif;
+        padding: 11px 12px 11px 36px;
+        transition: all .18s var(--ease);
+        outline: none;
+        appearance: none;
+    }
+
+    input::placeholder { color: var(--t2); }
+
+    input:focus, select:focus {
+        border-color: var(--accent);
+        background: var(--s3);
+        box-shadow: 0 0 0 3px var(--accent-lo);
+    }
+
+    .ni input, .ni select { padding-left: 12px; }
+
+    .cf-turnstile { display: flex; justify-content: center; margin: 16px 0; }
+
+    .btn-auth {
+        width: 100%; padding: 12px;
+        background: var(--accent);
+        color: #fff; border: none;
+        border-radius: 8px;
+        font-size: 14px; font-weight: 700;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px;
+        transition: all .18s var(--ease);
+        box-shadow: 0 4px 20px var(--accent-glo);
+    }
+
+    .btn-auth:hover { opacity:.88; transform: translateY(-1px); box-shadow: 0 8px 28px var(--accent-glo); }
+
+    .auth-switch {
+        text-align: center; margin-top: 20px;
+        font-size: 13px; color: var(--t1);
+        cursor: pointer;
+    }
+    .auth-switch span { color: var(--accent); font-weight: 600; }
+    .auth-switch:hover span { text-decoration: underline; }
+
+    /* ══════════════════════════════════════
+       DASHBOARD
+    ══════════════════════════════════════ */
+    #dashboard { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+        width: var(--sw);
+        background: var(--s0);
+        border-right: 1px solid var(--b1);
+        position: fixed; top: 0; left: 0; height: 100vh;
+        display: flex; flex-direction: column;
+        z-index: 1000;
+        transition: width .3s var(--ease);
+        overflow: hidden;
+    }
+
+    .sidebar.collapsed { width: var(--sc); }
+
+    .sb-hdr {
+        height: 58px; flex-shrink: 0;
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--b0);
+    }
+
+    .sb-brand {
+        display: flex; align-items: center;
+        gap: 9px; overflow: hidden;
+        text-decoration: none; color: var(--t0);
+    }
+
+    .sb-ico {
+        width: 30px; height: 30px;
+        background: var(--accent-lo);
+        border: 1px solid var(--accent-mid);
+        border-radius: 7px;
+        display: flex; align-items: center; justify-content: center;
+        color: var(--accent); font-size: 13px;
+        flex-shrink: 0;
+    }
+
+    .sb-brand img.custom-logo { max-height: 22px; }
+
+    .sb-name {
+        font-size: 14px; font-weight: 700;
+        letter-spacing: -.2px; white-space: nowrap;
+        transition: opacity .2s, width .2s;
+    }
+
+    .sidebar.collapsed .sb-name { opacity: 0; width: 0; }
+
+    .ib {
+        width: 28px; height: 28px;
+        background: transparent; border: none;
+        color: var(--t2); border-radius: 6px;
+        cursor: pointer; display: flex;
+        align-items: center; justify-content: center;
+        font-size: 13px; transition: all .18s;
+        flex-shrink: 0;
+    }
+    .ib:hover { background: var(--s2); color: var(--t0); }
+
+    /* Nav items */
+    .sb-nav {
+        flex: 1; padding: 8px;
+        overflow-y: auto; overflow-x: hidden;
+        scrollbar-width: none;
+    }
+    .sb-nav::-webkit-scrollbar { display: none; }
+
+    .sb-sec {
+        font-size: 9px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1.5px;
+        color: var(--t2); padding: 12px 8px 5px;
+        white-space: nowrap;
+        transition: opacity .2s;
+    }
+    .sidebar.collapsed .sb-sec { opacity: 0; }
+
+    .nav-item {
+        display: flex; align-items: center;
+        gap: 10px; padding: 8px 10px;
+        border-radius: 8px; margin-bottom: 1px;
+        color: var(--t1);
+        background: transparent; border: none;
+        width: 100%; text-align: left;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        font-size: 13px; font-weight: 500;
+        white-space: nowrap;
+        transition: all .16s var(--ease);
+        position: relative;
+    }
+
+    .ni-ic {
+        width: 30px; height: 30px;
+        border-radius: 7px;
+        display: flex; align-items: center;
+        justify-content: center; font-size: 13px;
+        flex-shrink: 0;
+        transition: all .16s;
+    }
+
+    .ni-lb { transition: opacity .18s; }
+    .sidebar.collapsed .ni-lb { opacity: 0; pointer-events: none; }
+
+    .nav-item:hover { color: var(--t0); background: var(--s2); }
+    .nav-item:hover .ni-ic { background: var(--s3); }
+
+    .nav-item.active { color: var(--accent); background: var(--accent-lo); }
+    .nav-item.active .ni-ic { background: var(--accent-mid); color: var(--accent); }
+    .nav-item.active::before {
+        content: '';
+        position: absolute; left: 0; top: 7px; bottom: 7px;
+        width: 2px;
+        background: var(--accent);
+        border-radius: 0 2px 2px 0;
+        box-shadow: 0 0 8px var(--accent-glo);
+    }
+
+    /* Rodapé */
+    .sb-foot {
+        padding: 10px 8px;
+        border-top: 1px solid var(--b0);
+        flex-shrink: 0;
+    }
+
+    .user-card {
+        display: flex; align-items: center;
+        gap: 9px; padding: 8px 10px;
+        background: var(--s2); border: 1px solid var(--b1);
+        border-radius: 8px; margin-bottom: 7px;
+        overflow: hidden;
+    }
+
+    .u-av {
+        width: 30px; height: 30px;
+        border-radius: 7px;
+        background: var(--accent-mid);
+        border: 1px solid var(--accent-mid);
+        color: var(--accent);
+        display: flex; align-items: center;
+        justify-content: center;
+        font-size: 12px; font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .u-info { overflow: hidden; }
+    .u-name { font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .u-role { font-size: 10px; color: var(--t2); font-family: var(--mono); }
+    .sidebar.collapsed .u-info { display: none; }
+
+    .foot-row { display: flex; gap: 5px; }
+
+    .foot-btn {
+        flex: 1; height: 32px; border-radius: 7px;
+        border: 1px solid var(--b1);
+        background: transparent; color: var(--t1);
+        font-size: 12px; font-family: 'Inter', sans-serif;
+        font-weight: 500; cursor: pointer;
+        display: flex; align-items: center;
+        justify-content: center; gap: 5px;
+        transition: all .16s; white-space: nowrap;
+        overflow: hidden;
+    }
+    .foot-btn:hover { background: var(--s2); color: var(--t0); }
+    .foot-btn.red  { color: var(--red); }
+    .foot-btn.red:hover { background: var(--red-lo); border-color: rgba(239,68,68,.2); }
+    .sidebar.collapsed .foot-btn span { display: none; }
+
+    /* ══════════════════════════════════════
+       MAIN
+    ══════════════════════════════════════ */
+    .main {
+        flex: 1;
+        margin-left: var(--sw);
+        min-height: 100vh;
+        display: flex; flex-direction: column;
+        transition: margin-left .3s var(--ease);
+    }
+    .sidebar.collapsed ~ .main { margin-left: var(--sc); }
+
+    /* Topbar */
+    .topbar {
+        height: 58px;
+        background: var(--s1);
+        border-bottom: 1px solid var(--b1);
+        display: flex; align-items: center;
+        justify-content: space-between;
+        padding: 0 26px;
+        position: sticky; top: 0; z-index: 100;
+    }
+
+    .tb-greeting { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+    .tb-sub { font-size: 10.5px; color: var(--t2); font-family: var(--mono); margin-top: 1px; }
+    .tb-sub em { font-style: normal; color: var(--accent); }
+
+    .tb-right { display: flex; align-items: center; gap: 8px; }
+
+    .coins-pill {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 12px;
+        background: var(--s2); border: 1px solid var(--b1);
+        border-radius: 7px;
+        font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    }
+    .coins-pill i   { color: var(--amber); font-size: 11px; }
+    .coins-pill .cv { color: var(--amber); }
+    .coins-pill .cl { color: var(--t2); font-weight: 400; margin-left: 1px; }
+
+    .theme-btn {
+        width: 34px; height: 34px;
+        background: var(--s2); border: 1px solid var(--b1);
+        border-radius: 7px; color: var(--t1);
+        display: flex; align-items: center;
+        justify-content: center; font-size: 13px;
+        cursor: pointer; transition: all .16s;
+    }
+    .theme-btn:hover { color: var(--t0); border-color: var(--b2); }
+
+    /* Corpo das páginas */
+    .page-body { padding: 26px; flex: 1; }
+
+    /* ══════════════════════════════════════
+       STATS CARDS
+    ══════════════════════════════════════ */
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px,1fr));
+        gap: 12px; margin-bottom: 22px;
+    }
+
+    .stat-card {
+        background: var(--s1);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 16px 18px;
+        display: flex; align-items: center; gap: 14px;
+        transition: border-color .18s, transform .18s;
+    }
+    .stat-card:hover { border-color: var(--b2); transform: translateY(-2px); }
+
+    .sc-ico {
+        width: 42px; height: 42px;
+        border-radius: 9px;
+        display: flex; align-items: center;
+        justify-content: center; font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .ico-acc { background: var(--accent-lo); border: 1px solid var(--accent-mid); color: var(--accent); }
+    .ico-grn { background: var(--green-lo);  border: 1px solid rgba(34,197,94,.18);  color: var(--green); }
+    .ico-amb { background: var(--amber-lo);  border: 1px solid rgba(245,158,11,.18); color: var(--amber); }
+    .ico-dim { background: var(--s3);        border: 1px solid var(--b1);            color: var(--t1); }
+
+    .sc-lbl { font-size: 10.5px; color: var(--t2); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; margin-bottom: 3px; }
+    .sc-val { font-size: 19px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+    .sc-val small { font-size: 10.5px; color: var(--t2); font-family: 'Inter'; font-weight: 400; margin-left: 3px; }
+
+    /* ══════════════════════════════════════
+       PROMO BANNER
+    ══════════════════════════════════════ */
+    .promo-banner {
+        background: var(--s2);
+        border: 1px solid var(--b2);
+        border-radius: var(--r);
+        padding: 22px 26px;
+        position: relative; overflow: hidden;
+        margin-bottom: 22px;
+        display: none;
+    }
+    .promo-banner::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, var(--accent) 0%, transparent 55%);
+    }
+
+    .promo-banner h2 { font-size: 18px; font-weight: 700; margin-bottom: 5px; letter-spacing: -.3px; }
+    .promo-banner p  { font-size: 13px; color: var(--t1); line-height: 1.65; max-width: 440px; margin-bottom: 16px; }
+
+    .promo-icon {
+        position: absolute; right: 22px; bottom: -14px;
+        font-size: 90px; color: var(--t2); opacity: .05;
+        transform: rotate(-10deg);
+    }
+
+    .close-banner {
+        position: absolute; top: 12px; right: 12px;
+        width: 26px; height: 26px; border-radius: 6px;
+        background: var(--s3); border: none;
+        color: var(--t1); cursor: pointer;
+        display: flex; align-items: center;
+        justify-content: center; font-size: 11px;
+        transition: all .16s;
+    }
+    .close-banner:hover { background: var(--s4); color: var(--t0); }
+
+    /* Section header */
+    .sec-head {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .sec-title {
+        font-size: 16px; font-weight: 700;
+        letter-spacing: -.3px;
+        display: flex; align-items: center; gap: 8px;
+    }
+    .sec-title i { color: var(--accent); font-size: 13px; }
+
+    /* ══════════════════════════════════════
+       ITEM CARDS
+    ══════════════════════════════════════ */
+    .list-wrap { display: flex; flex-direction: column; gap: 7px; }
+
+    .item-card {
+        background: var(--s1);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 13px 16px;
+        display: flex; align-items: center;
+        justify-content: space-between;
+        gap: 12px; flex-wrap: wrap;
+        transition: border-color .16s, background .16s;
+    }
+    .item-card:hover { border-color: var(--b2); background: var(--s2); }
+
+    .item-name { font-size: 13.5px; font-weight: 600; }
+    .item-sub  { font-size: 11px; color: var(--t2); margin-top: 2px; font-family: var(--mono); }
+
+    .item-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+    /* Badges */
+    .badge {
+        font-size: 9.5px; font-weight: 700;
+        padding: 2px 7px; border-radius: 4px;
+        text-transform: uppercase; letter-spacing: .5px;
+    }
+    .b-acc { background: var(--accent-lo); color: var(--accent); border: 1px solid var(--accent-mid); }
+    .b-grn { background: var(--green-lo);  color: var(--green);  border: 1px solid rgba(34,197,94,.18); }
+    .b-dim { background: var(--s3); color: var(--t1); border: 1px solid var(--b1); }
+
+    /* ══════════════════════════════════════
+       STORE GRID
+    ══════════════════════════════════════ */
+    .store-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(265px,1fr));
+        gap: 12px;
+    }
+
+    .product-card {
+        background: var(--s1);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 20px; display: flex;
+        flex-direction: column; gap: 12px;
+        position: relative; overflow: hidden;
+        transition: all .2s var(--ease);
+    }
+
+    .product-card::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, var(--accent) 0%, transparent 70%);
+        opacity: 0; transition: opacity .2s;
+    }
+
+    .product-card:hover {
+        border-color: var(--b2); background: var(--s2);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0,0,0,.28);
+    }
+    .product-card:hover::before { opacity: 1; }
+
+    .pc-head { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pc-name { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+    .pc-desc { font-size: 12.5px; color: var(--t1); line-height: 1.65; }
+    .pc-price { font-size: 24px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+    .pc-price small { font-size: 11px; color: var(--t2); font-family: 'Inter'; font-weight: 400; margin-left: 4px; }
+    .pc-foot { margin-top: auto; }
+
+    /* ══════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════ */
+    .btn {
+        display: inline-flex; align-items: center;
+        justify-content: center; gap: 6px;
+        padding: 8px 15px; border-radius: 7px;
+        font-size: 12.5px; font-weight: 600;
+        font-family: 'Inter', sans-serif;
+        cursor: pointer; border: none;
+        transition: all .16s var(--ease);
+        white-space: nowrap; letter-spacing: .1px;
+    }
+    .btn-sm    { padding: 5px 11px; font-size: 11.5px; }
+    .btn-block { width: 100%; }
+
+    .btn-acc {
+        background: var(--accent); color: #fff;
+        box-shadow: 0 2px 10px var(--accent-glo);
+    }
+    .btn-acc:hover { opacity:.87; transform: translateY(-1px); box-shadow: 0 5px 16px var(--accent-glo); }
+
+    .btn-ghost {
+        background: transparent; color: var(--t1);
+        border: 1px solid var(--b2);
+    }
+    .btn-ghost:hover { background: var(--s2); color: var(--t0); }
+
+    .btn-red {
+        background: var(--red-lo); color: var(--red);
+        border: 1px solid rgba(239,68,68,.2);
+    }
+    .btn-red:hover { background: rgba(239,68,68,.17); }
+
+    /* ══════════════════════════════════════
+       ADMIN FORM
+    ══════════════════════════════════════ */
+    .admin-form {
+        background: var(--s1); border: 1px solid var(--b1);
+        border-radius: var(--r); padding: 20px; margin-bottom: 16px;
+    }
+
+    .fg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .fg3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .ff  { display: flex; flex-direction: column; gap: 5px; }
+    .ff label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--t2); }
+    .ff input, .ff select { padding-left: 12px; }
+    .fa-row { display: flex; gap: 9px; }
+
+    /* Hero */
+    .hero-img { border-radius: var(--r); overflow: hidden; border: 1px solid var(--b1); margin-top: 18px; }
+    .hero-img img { width: 100%; height: auto; display: block; }
+
+    /* Empty */
+    .empty { text-align: center; padding: 52px 20px; color: var(--t2); }
+    .empty i { font-size: 34px; margin-bottom: 12px; display: block; opacity: .2; }
+    .empty p { font-size: 13px; }
+
+    /* Backdrop mobile */
+    .sb-back {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.65);
+        z-index: 999; backdrop-filter: blur(4px);
+    }
+    .sb-back.active { display: block; }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
+    @media (max-width: 900px) {
+        .auth-left { display: none; }
+        .auth-right { width: 100%; border-left: none; padding: 36px 26px; }
+    }
+
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+            width: var(--sw) !important;
+            transition: transform .3s var(--ease);
+        }
+        .sidebar.active { transform: translateX(0); }
+        .main { margin-left: 0 !important; }
+        .mobile-topbar { display: flex; }
+        .topbar { display: none; }
+        .page-body { padding: 16px; padding-top: 70px; }
+        .fg2, .fg3 { grid-template-columns: 1fr; }
+        .item-card { flex-direction: column; align-items: flex-start; }
+        .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 460px) {
+        .stats-row { grid-template-columns: 1fr; }
+    }
+
+    .page { animation: fadeUp .24s var(--ease); }
+    @keyframes fadeUp {
+        from { opacity:0; transform: translateY(11px); }
+        to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       LOJA DE COINS
+    ══════════════════════════════════════ */
+    .admin-bar-coins {
+        display: flex; align-items: center; gap: 10px;
+        background: linear-gradient(135deg, rgba(79,142,247,0.13) 0%, rgba(79,142,247,0.05) 100%);
+        border: 1px solid var(--accent-mid);
+        border-radius: var(--r);
+        padding: 12px 18px;
+        margin-bottom: 18px;
+    }
+    .admin-bar-coins i { color: var(--accent); font-size: 14px; }
+    .admin-bar-coins span { font-size: 13px; font-weight: 600; color: var(--accent); flex: 1; }
+
+    .coin-plan-card {
+        background: var(--s1);
+        border: 1px solid var(--b1);
+        border-radius: var(--r);
+        padding: 22px; display: flex;
+        flex-direction: column; gap: 10px;
+        position: relative; overflow: hidden;
+        transition: all .2s var(--ease);
+    }
+    .coin-plan-card::before {
+        content: ''; position: absolute;
+        top: 0; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, #f59e0b 0%, transparent 70%);
+        opacity: 0; transition: opacity .2s;
+    }
+    .coin-plan-card:hover {
+        border-color: rgba(245,158,11,.3); background: var(--s2);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(0,0,0,.28);
+    }
+    .coin-plan-card:hover::before { opacity: 1; }
+
+    .cpc-title { font-size: 16px; font-weight: 700; letter-spacing: -.2px; }
+    .cpc-desc  { font-size: 12.5px; color: var(--t1); line-height: 1.6; }
+    .cpc-coins {
+        font-size: 28px; font-weight: 800;
+        font-family: var(--mono); letter-spacing: -.5px;
+        color: var(--amber);
+        display: flex; align-items: center; gap: 7px;
+    }
+    .cpc-coins i { font-size: 18px; }
+    .cpc-price {
+        font-size: 13px; color: var(--t1);
+        display: flex; align-items: center; gap: 5px;
+    }
+    .cpc-price strong { color: var(--green); font-size: 16px; font-family: var(--mono); }
+
+    /* ══════════════════════════════════════
+       MODAL PIX
+    ══════════════════════════════════════ */
+    .pix-overlay {
+        position: fixed; inset: 0;
+        background: rgba(6,7,9,.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        display: none; align-items: center;
+        justify-content: center;
+        z-index: 10001; padding: 20px;
+    }
+    .pix-overlay.active { display: flex; }
+
+    .pix-box {
+        background: var(--s1);
+        border: 1px solid var(--b2);
+        border-radius: 18px;
+        width: 100%; max-width: 440px;
+        overflow: hidden;
+        box-shadow: 0 48px 96px rgba(0,0,0,.7);
+        animation: mpop .22s var(--ease);
+    }
+
+    .pix-stripe {
+        height: 3px;
+        background: linear-gradient(90deg, #00b960 0%, #00d876 60%, transparent 100%);
+    }
+
+    .pix-inner { padding: 26px; }
+
+    .pix-header {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    .pix-header-left { display: flex; align-items: center; gap: 12px; }
+    .pix-ico {
+        width: 44px; height: 44px; border-radius: 11px;
+        background: rgba(0,185,96,.12);
+        border: 1px solid rgba(0,185,96,.25);
+        display: flex; align-items: center; justify-content: center;
+        color: #00b960; font-size: 18px;
+    }
+    .pix-header h3 { font-size: 16px; font-weight: 700; }
+    .pix-header p  { font-size: 11.5px; color: var(--t2); margin-top: 2px; }
+
+    .pix-close {
+        width: 32px; height: 32px; border-radius: 8px;
+        background: var(--s3); border: 1px solid var(--b1);
+        color: var(--t1); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; transition: all .16s;
+    }
+    .pix-close:hover { background: var(--red-lo); color: var(--red); border-color: rgba(239,68,68,.2); }
+
+    .pix-status-bar {
+        display: flex; align-items: center; gap: 9px;
+        background: rgba(245,158,11,.08);
+        border: 1px solid rgba(245,158,11,.2);
+        border-radius: 8px; padding: 10px 14px;
+        margin-bottom: 18px;
+    }
+    .pix-status-bar.confirmed {
+        background: rgba(34,197,94,.1);
+        border-color: rgba(34,197,94,.25);
+    }
+    .pix-status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--amber);
+        animation: pulse-dot 1.5s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+    .pix-status-bar.confirmed .pix-status-dot {
+        background: var(--green); animation: none;
+    }
+    @keyframes pulse-dot {
+        0%,100% { transform: scale(1); opacity:1; }
+        50% { transform: scale(1.4); opacity:.6; }
+    }
+    .pix-status-text { font-size: 12.5px; font-weight: 600; color: var(--amber); }
+    .pix-status-bar.confirmed .pix-status-text { color: var(--green); }
+
+    .pix-qr-wrap {
+        display: flex; justify-content: center;
+        margin-bottom: 18px;
+    }
+    .pix-qr-wrap img {
+        width: 180px; height: 180px;
+        border-radius: 12px;
+        border: 3px solid rgba(0,185,96,.2);
+        background: #fff; padding: 8px;
+    }
+
+    .pix-copypaste-label {
+        font-size: 10px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 1px;
+        color: var(--t2); margin-bottom: 7px;
+    }
+    .pix-copy-row {
+        display: flex; gap: 8px; margin-bottom: 18px;
+    }
+    .pix-code {
+        flex: 1; background: var(--s2);
+        border: 1px solid var(--b1); border-radius: 8px;
+        padding: 9px 12px;
+        font-family: var(--mono); font-size: 10px;
+        color: var(--t1); word-break: break-all;
+        overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        user-select: all;
+    }
+    .pix-copy-btn {
+        padding: 9px 14px; border-radius: 8px;
+        background: var(--accent-lo); color: var(--accent);
+        border: 1px solid var(--accent-mid);
+        font-size: 12px; font-weight: 600;
+        cursor: pointer; white-space: nowrap;
+        display: flex; align-items: center; gap: 5px;
+        transition: all .16s;
+    }
+    .pix-copy-btn:hover { background: var(--accent-mid); }
+
+    .pix-info-row {
+        display: flex; justify-content: space-between;
+        background: var(--s2); border: 1px solid var(--b1);
+        border-radius: 8px; padding: 12px 15px;
+        margin-bottom: 16px;
+    }
+    .pix-info-item { text-align: center; }
+    .pix-info-label { font-size: 9.5px; color: var(--t2); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 3px; }
+    .pix-info-value { font-size: 15px; font-weight: 700; font-family: var(--mono); }
+    .pix-info-value.coins-val { color: var(--amber); }
+    .pix-info-value.price-val { color: var(--green); }
+
+    .pix-confirmed-msg {
+        display: none; text-align: center;
+        padding: 16px; background: rgba(34,197,94,.08);
+        border: 1px solid rgba(34,197,94,.2);
+        border-radius: 10px; margin-bottom: 16px;
+    }
+    .pix-confirmed-msg i { font-size: 28px; color: var(--green); display: block; margin-bottom: 8px; }
+    .pix-confirmed-msg h4 { font-size: 15px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+    .pix-confirmed-msg p  { font-size: 12px; color: var(--t1); }
+    </style>
+</head>
+<body>
+
+<!-- ═══ LOADING ═══ -->
+<div id="loadingOverlay">
+    <div class="ld-ring"><i class="fas fa-bolt"></i></div>
+    <div class="ld-name">Speed<em>-Sync</em></div>
+    <div class="ld-track"></div>
+    <div class="ld-lbl">Inicializando sistema</div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div id="modalOverlay" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-stripe"></div>
+        <div class="modal-inner">
+            <form id="modalForm" onsubmit="event.preventDefault(); document.getElementById('modalConfirmBtn').click();">
+                <div class="modal-head">
+                    <div class="modal-ico"><i id="modalIcon" class="fas fa-info-circle"></i></div>
+                    <h3 id="modalTitle">Título</h3>
+                </div>
+                <div class="modal-body" id="modalMessage">Mensagem...</div>
+                <div id="modalInputContainer" style="display:none;margin-bottom:16px;">
+                    <div class="fw"><input id="modalInput" placeholder="Digite aqui..."></div>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" id="modalCancelBtn" class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+                    <button type="submit" id="modalConfirmBtn" class="btn btn-acc">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Backdrop sidebar mobile -->
+<div class="sb-back" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+<!-- ═══ MOBILE TOPBAR ═══ -->
+<div class="mobile-topbar" id="mobileNav" style="display:none;">
+    <button class="ib" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <div class="sb-brand">
+        <div class="sb-ico">
+            <i class="fas fa-bolt" id="defaultLogoMobile"></i>
+            <img src="" alt="" class="custom-logo" id="hostLogoMobile" style="display:none;">
+        </div>
+        <span class="sb-name">Speed-Sync</span>
+    </div>
+</div>
+
+<!-- ═══ DASHBOARD ═══ -->
+<div id="dashboard" style="display:flex;min-height:100vh;">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-hdr">
+            <div class="sb-brand">
+                <div class="sb-ico">
+                    <i class="fas fa-bolt" id="defaultLogoSidebar"></i>
+                    <img src="" alt="" class="custom-logo" id="hostLogoSidebar" style="display:none;">
+                </div>
+                <span class="sb-name">Speed-Sync</span>
+            </div>
+            <button class="ib" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        </div>
+
+        <nav class="sb-nav">
+            <div class="sb-sec">Principal</div>
+            <button class="nav-item active" onclick="showPage('home', this)">
+                <span class="ni-ic"><i class="fas fa-th-large"></i></span>
+                <span class="ni-lb">Dashboard</span>
+            </button>
+            <button class="nav-item" onclick="showPage('servers', this)">
+                <span class="ni-ic"><i class="fas fa-server"></i></span>
+                <span class="ni-lb">Servidores</span>
+            </button>
+            <button class="nav-item" onclick="showPage('store', this)">
+                <span class="ni-ic"><i class="fas fa-store"></i></span>
+                <span class="ni-lb">Loja de Planos</span>
+            </button>
+            <button class="nav-item" onclick="showPage('coinShop', this)">
+                <span class="ni-ic"><i class="fas fa-coins"></i></span>
+                <span class="ni-lb">Loja</span>
+            </button>
+
+            <div id="adminLabel" class="sb-sec" style="display:none;">Administração</div>
+            <button id="adminBtn" class="nav-item" style="display:none;" onclick="showPage('admin', this)">
+                <span class="ni-ic"><i class="fas fa-users-cog"></i></span>
+                <span class="ni-lb">Usuários</span>
+            </button>
+            <button id="productsBtn" class="nav-item" style="display:none;" onclick="showPage('products', this)">
+                <span class="ni-ic"><i class="fas fa-box"></i></span>
+                <span class="ni-lb">Produtos</span>
+            </button>
+            <button id="coinShopAdminBtn" class="nav-item" style="display:none;" onclick="showPage('coinShop', this)">
+                <span class="ni-ic"><i class="fas fa-coins"></i></span>
+                <span class="ni-lb">Loja de Coins</span>
+            </button>
+        </nav>
+
+        <div class="sb-foot">
+            <div class="user-card">
+                <div class="u-av" id="userAvatarInitial">U</div>
+                <div class="u-info">
+                    <div class="u-name" id="userNameDisplay">Usuário</div>
+                    <div class="u-role" id="userRoleCard">member</div>
+                </div>
+            </div>
+            <div class="foot-row">
+                <button class="foot-btn" onclick="toggleTheme()">
+                    <i id="themeIcon" class="fas fa-moon"></i>
+                    <span id="themeText">Tema</span>
+                </button>
+                <button class="foot-btn red" onclick="localStorage.removeItem('ss_tok');localStorage.removeItem('ss_cache');window.location.replace('/')">
+                    <i class="fas fa-power-off"></i>
+                    <span>Sair</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <div>
+                <div class="tb-greeting" id="greetingText">Bem-vindo</div>
+                <div class="tb-sub">Logado como <em id="userNameTopbar">usuário</em></div>
+            </div>
+            <div class="tb-right">
+                <div class="coins-pill">
+                    <i class="fas fa-coins"></i>
+                    <span class="cv" id="coins_home">0</span>
+                    <span class="cl">coins</span>
+                </div>
+                <button class="theme-btn" onclick="toggleTheme()">
+                    <i id="themeIconTop" class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="page-body">
+
+            <!-- HOME -->
+            <div id="home" class="page">
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="sc-ico ico-dim"><i class="fas fa-user"></i></div>
+                        <div>
+                            <div class="sc-lbl" id="userRoleCard2">Membro</div>
+                            <div class="sc-val" id="userNameCard">Usuário</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sc-ico ico-amb"><i class="fas fa-coins"></i></div>
+                        <div>
+                            <div class="sc-lbl">Saldo em conta</div>
+                            <div class="sc-val" id="coins_home2">0<small>coins</small></div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="sc-ico ico-grn"><i class="fas fa-server"></i></div>
+                        <div>
+                            <div class="sc-lbl">Servidores ativos</div>
+                            <div class="sc-val" id="serverCount">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="promoBanner" class="promo-banner">
+                    <button class="close-banner" onclick="closeBanner()"><i class="fas fa-times"></i></button>
+                    <div style="position:relative;z-index:1;">
+                        <h2>Potencialize seu Projeto</h2>
+                        <p>Infraestrutura de alta performance com proteção DDoS e suporte 24/7 para o seu servidor.</p>
+                        <button class="btn btn-acc" onclick="showPage('store')">Ver Planos <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                    <i class="fas fa-rocket promo-icon"></i>
+                </div>
+
+                <div class="hero-img">
+                    <img src="https://xatimg.com/image/5QzcrY8Z72iJ.jpg" alt="Banner">
+                </div>
+            </div>
+
+            <!-- SERVERS -->
+            <div id="servers" class="page" style="display:none;">
+                <div class="sec-head">
+                    <h2 class="sec-title"><i class="fas fa-server"></i> Suas Instâncias</h2>
+                </div>
+                <div id="myServers" class="list-wrap"></div>
+            </div>
+
+            <!-- STORE -->
+            <div id="store" class="page" style="display:none;">
+                <div class="sec-head">
+                    <h2 class="sec-title"><i class="fas fa-store"></i> Planos Disponíveis</h2>
+                </div>
+                <div id="storeList" class="store-grid"></div>
+            </div>
+
+            <!-- ADMIN USERS -->
+            <div id="admin" class="page" style="display:none;">
+                <div class="sec-head">
+                    <h2 class="sec-title"><i class="fas fa-users-cog"></i> Gestão de Usuários</h2>
+                </div>
+                <div id="usersList" class="list-wrap"></div>
+            </div>
+
+            <!-- ADMIN PRODUCTS -->
+            <div id="products" class="page" style="display:none;">
+                <div class="sec-head">
+                    <h2 class="sec-title"><i class="fas fa-box-open"></i> Catálogo de Produtos</h2>
+                    <button class="btn btn-acc" onclick="showCreateProduct()"><i class="fas fa-plus"></i> Novo Produto</button>
+                </div>
+
+                <div id="productForm" style="display:none;" class="admin-form">
+                    <div class="fg2">
+                        <div class="ff"><label>Nome</label><input id="p_name" placeholder="Ex: Plano VIP"></div>
+                        <div class="ff"><label>Preço (Coins)</label><input id="p_price" type="number" placeholder="0"></div>
+                    </div>
+                    <div class="ff" style="margin-bottom:12px;"><label>Descrição</label><input id="p_desc" placeholder="Ex: 4GB RAM, 2 vCPU"></div>
+                    <div class="fg3">
+                        <div class="ff"><label>CPU (%)</label><input id="p_cpu" placeholder="100"></div>
+                        <div class="ff"><label>RAM (MB)</label><input id="p_memory" placeholder="1024"></div>
+                        <div class="ff"><label>Disco (MB)</label><input id="p_disk" placeholder="5120"></div>
+                    </div>
+                    <div class="fg2">
+                        <div class="ff"><label>Node</label><select id="nodeSelect"></select></div>
+                        <div class="ff"><label>Egg</label><select id="eggSelect"></select></div>
+                    </div>
+                    <div class="fa-row">
+                        <button class="btn btn-acc" onclick="createProduct()" style="flex:1;"><i class="fas fa-save"></i> Salvar</button>
+                        <button class="btn btn-ghost" onclick="document.getElementById('productForm').style.display='none'" style="flex:1;">Cancelar</button>
+                    </div>
+                </div>
+
+                <div id="productList" class="list-wrap"></div>
+            </div>
+
+            <!-- LOJA DE COINS -->
+            <div id="coinShop" class="page" style="display:none;">
+
+                <!-- Barra do ADM para criar plano -->
+                <div id="coinAdminBar" style="display:none;margin-bottom:14px;">
+                    <button class="btn btn-acc btn-sm" onclick="toggleCoinPlanForm()"><i class="fas fa-plus"></i> Criar Plano</button>
+                </div>
+
+                <!-- Formulário admin de criar plano -->
+                <div id="coinPlanForm" style="display:none;" class="admin-form">
+                    <div class="fg2">
+                        <div class="ff"><label>Título do Plano</label><input id="cp_title" placeholder="Ex: Pacote Starter"></div>
+                        <div class="ff"><label>Preço (R$)</label><input id="cp_price" type="number" step="0.01" placeholder="4.90"></div>
+                    </div>
+                    <div class="fg2" style="margin-bottom:12px;">
+                        <div class="ff"><label>Quantidade de Coins</label><input id="cp_coins" type="number" placeholder="500"></div>
+                        <div class="ff"><label>Descrição</label><input id="cp_desc" placeholder="Ex: Ideal para começar"></div>
+                    </div>
+                    <div class="fa-row">
+                        <button class="btn btn-acc" onclick="createCoinPlan()" style="flex:1;"><i class="fas fa-save"></i> Salvar Plano</button>
+                        <button class="btn btn-ghost" onclick="document.getElementById('coinPlanForm').style.display='none'" style="flex:1;">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="sec-head">
+                    <h2 class="sec-title"><i class="fas fa-coins"></i> Comprar Coins</h2>
+                </div>
+
+                <div id="coinPlanList" class="store-grid"></div>
+
+                <!-- Lista admin dos planos existentes -->
+                <div id="coinAdminList" style="display:none;margin-top:22px;">
+                    <div class="sec-head" style="margin-top:8px;">
+                        <h2 class="sec-title" style="font-size:13px;color:var(--t1);"><i class="fas fa-list"></i> Planos cadastrados</h2>
+                    </div>
+                    <div id="coinAdminPlanList" class="list-wrap"></div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- ═══ MODAL PIX ═══ -->
+<div id="pixOverlay" class="pix-overlay">
+    <div class="pix-box">
+        <div class="pix-stripe"></div>
+        <div class="pix-inner">
+            <div class="pix-header">
+                <div class="pix-header-left">
+                    <div class="pix-ico"><i class="fas fa-qrcode"></i></div>
+                    <div>
+                        <h3>Pagamento PIX</h3>
+                        <p id="pixPlanTitle">Plano</p>
+                    </div>
+                </div>
+                <button class="pix-close" onclick="closePixModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div id="pixStatusBar" class="pix-status-bar">
+                <div class="pix-status-dot"></div>
+                <span class="pix-status-text">Aguardando pagamento...</span>
+            </div>
+
+            <div id="pixQrWrap" class="pix-qr-wrap">
+                <img id="pixQrImg" src="" alt="QR Code PIX">
+            </div>
+
+            <div id="pixQrSection">
+                <div class="pix-copypaste-label">Copia e Cola PIX</div>
+                <div class="pix-copy-row">
+                    <div class="pix-code" id="pixCodeText">Carregando...</div>
+                    <button class="pix-copy-btn" onclick="copyPix()"><i class="fas fa-copy"></i> Copiar</button>
+                </div>
+            </div>
+
+            <div class="pix-info-row">
+                <div class="pix-info-item">
+                    <div class="pix-info-label">Valor</div>
+                    <div class="pix-info-value price-val" id="pixPriceVal">R$ 0,00</div>
+                </div>
+                <div class="pix-info-item">
+                    <div class="pix-info-label">Coins</div>
+                    <div class="pix-info-value coins-val" id="pixCoinsVal">0 🪙</div>
+                </div>
+            </div>
+
+            <div id="pixConfirmedMsg" class="pix-confirmed-msg">
+                <i class="fas fa-check-circle"></i>
+                <h4>Pagamento Confirmado!</h4>
+                <p id="pixConfirmedCoins">Coins adicionados à sua conta com sucesso!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── CONFIG ─────────────────────────────────
+    const HOST_LOGO_URL = "";
+
+    // ── MODAL ─────────────────────────────────
+    function showModal({title, message, icon='fa-info-circle', type='alert', placeholder='', onConfirm=null}) {
+        const overlay   = document.getElementById('modalOverlay');
+        const inputEl   = document.getElementById('modalInput');
+        const cancelBtn = document.getElementById('modalCancelBtn');
+        const inputCont = document.getElementById('modalInputContainer');
+
+        document.getElementById('modalTitle').innerText   = title;
+        document.getElementById('modalMessage').innerText = message;
+        document.getElementById('modalIcon').className    = `fas ${icon}`;
+
+        inputCont.style.display = 'none';
+        cancelBtn.style.display = 'block';
+        inputEl.value = '';
+
+        if (type === 'alert') {
+            cancelBtn.style.display = 'none';
+        } else if (type === 'prompt') {
+            inputCont.style.display = 'block';
+            inputEl.placeholder = placeholder;
+        }
+
+        overlay.classList.add('active');
+
+        // Clona o botão zerando listeners anteriores — previne duplo disparo
+        const oldBtn   = document.getElementById('modalConfirmBtn');
+        const freshBtn = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(freshBtn, oldBtn);
+
+        let _fired = false;
+        freshBtn.addEventListener('click', () => {
+            if (_fired) return;
+            const value = type === 'prompt' ? inputEl.value : true;
+            if (type === 'prompt' && !value) return;
+            _fired = true;
+            closeModal();
+            if (onConfirm) onConfirm(value);
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('active');
+    }
+
+    // ── TEMA ─────────────────────────────────
+    function toggleTheme() {
+        const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        updateThemeUI(next);
+    }
+
+    function updateThemeUI(t) {
+        const cls = t === 'light' ? 'fa-moon' : 'fa-sun';
+        ['themeIcon','themeIconTop'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.className = `fas ${cls}`;
+        });
+        const txt = document.getElementById('themeText');
+        if (txt) txt.innerText = t === 'light' ? 'Escuro' : 'Claro';
+    }
+
+    // ── SIDEBAR ─────────────────────────────────
+    function toggleSidebar() {
+        const sb = document.getElementById('sidebar');
+        const bd = document.getElementById('sidebarBackdrop');
+        if (window.innerWidth <= 768) { sb.classList.toggle('active'); bd.classList.toggle('active'); }
+        else sb.classList.toggle('collapsed');
+    }
+
+    function closeBanner() { document.getElementById('promoBanner').style.display = 'none'; }
+
+    function updateGreeting() {
+        const h = new Date().getHours();
+        let g = 'Bem-vindo';
+        if (h >= 5 && h < 12) g = 'Bom dia';
+        else if (h >= 12 && h < 18) g = 'Boa tarde';
+        else g = 'Boa noite';
+        document.getElementById('greetingText').innerText = g;
+    }
+
+    // ── LOADING ─────────────────────────────────
+    async function showLoading() {
+        const o = document.getElementById('loadingOverlay');
+        o.style.display = 'flex'; o.style.opacity = '1';
+        return new Promise(r => setTimeout(r, 600));
+    }
+
+    function hideLoading() {
+        const o = document.getElementById('loadingOverlay');
+        o.style.opacity = '0';
+        setTimeout(() => o.style.display = 'none', 400);
+    }
+
+    // ── INIT ─────────────────────────────────
+    window.addEventListener('load', () => {
+        if (HOST_LOGO_URL) {
+            ['hostLogoAuth','hostLogoMobile','hostLogoSidebar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.src = HOST_LOGO_URL; el.style.display = 'inline-block'; }
+            });
+            ['defaultLogoAuth','defaultLogoMobile','defaultLogoSidebar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+        const theme = localStorage.getItem('theme') || 'dark';
+        document.body.setAttribute('data-theme', theme);
+        updateThemeUI(theme);
+        document.getElementById('mobileNav').style.display = 'none';
+        updateGreeting();
+
+        // ── Verificar token e carregar usuário ──────────────────────
+        const token = new URLSearchParams(window.location.search).get('t') || localStorage.getItem('ss_tok');
+
+        if (!token) { window.location.replace('/'); return; }
+
+        // Salvar token e limpar da URL sem recarregar
+        localStorage.setItem('ss_tok', token);
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, '/dashboard');
+        }
+
+        // Buscar dados atualizados do usuário usando o token
+        fetch('/api/me', { headers: { 'x-session-token': token } })
+        .then(r => {
+            if (r.status === 401) { localStorage.removeItem('ss_tok'); window.location.replace('/'); return null; }
+            return r.json();
+        })
+        .then(data => {
+            if (!data) return;
+            currentUser = data.user;
+            mountDashboard();
+        })
+        .catch(() => {
+            // Sem conexão — tentar dados em cache
+            const cached = localStorage.getItem('ss_cache');
+            if (cached) { currentUser = JSON.parse(cached); mountDashboard(); }
+            else { window.location.replace('/'); }
+        });
+    });
+
+    let currentUser = null;
+
+    function mountDashboard() {
+        // Cache local para fallback offline
+        localStorage.setItem('ss_cache', JSON.stringify(currentUser));
+
+        const name    = currentUser.username.split('@')[0];
+        const initial = name.charAt(0).toUpperCase();
+
+        document.getElementById('userNameDisplay').innerText   = name;
+        document.getElementById('userNameTopbar').innerText    = name;
+        document.getElementById('userNameCard').innerText      = name;
+        document.getElementById('userRoleCard').innerText      = currentUser.role;
+        document.getElementById('userRoleCard2').innerText     = currentUser.role.toUpperCase();
+        document.getElementById('userAvatarInitial').innerText = initial;
+
+        if (window.innerWidth <= 768) document.getElementById('mobileNav').style.display = 'flex';
+
+        document.getElementById('promoBanner').style.display = 'block';
+        document.getElementById('coins_home').innerText  = currentUser.coins;
+        document.getElementById('coins_home2').innerText = currentUser.coins;
+
+        if (currentUser.role === 'admin') {
+            document.getElementById('adminLabel').style.display       = 'block';
+            document.getElementById('adminBtn').style.display         = 'flex';
+            document.getElementById('productsBtn').style.display      = 'flex';
+            document.getElementById('coinShopAdminBtn').style.display = 'flex';
+            loadUsers(); loadProducts();
+        }
+        loadStore(); loadMyServers(); updateGreeting();
+
+        document.getElementById('loadingOverlay').style.opacity = '0';
+        setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+    }
+
+    // ── PAGES ─────────────────────────────────
+    async function showPage(page, btn) {
+        await showLoading();
+        document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+        document.getElementById(page).style.display = 'block';
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        if (page === 'servers') loadMyServers();
+        if (page === 'store')   loadStore();
+        if (page === 'coinShop') loadCoinShop();
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebarBackdrop').classList.remove('active');
+        }
+        hideLoading();
+    }
+
+    // ── SERVERS ─────────────────────────────────
+    function loadMyServers() {
+        fetch(`/api/my-servers/${currentUser.id}`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('serverCount').innerText = data.length;
+            if (data.length === 0) {
+                document.getElementById('myServers').innerHTML = `<div class="empty"><i class="fas fa-server"></i><p>Nenhum servidor encontrado.</p></div>`;
+                return;
+            }
+            document.getElementById('myServers').innerHTML = data.map(s => `
+                <div class="item-card">
+                    <div>
+                        <div class="item-name">${s.name}</div>
+                        <div class="item-sub">UUID: ${s.id}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="btn btn-acc btn-sm" onclick="openServer('${s.id}')">
+                            <i class="fas fa-external-link-alt"></i> Gerenciar
+                        </button>
+                    </div>
+                </div>`).join('');
+        });
+    }
+
+    async function openServer(uuid) {
+        await showLoading();
+        window.open(`https://painel.speed-sync.shop/server/${uuid}`, '_blank');
+        hideLoading();
+    }
+
+    // ── STORE ─────────────────────────────────
+    function loadStore() {
+        fetch('/api/products').then(res => res.json()).then(data => {
+            document.getElementById('storeList').innerHTML = data.map(p => `
+                <div class="product-card">
+                    <div class="pc-head">
+                        <h4 class="pc-name">${p.name}</h4>
+                        <i class="fas fa-bolt" style="color:var(--accent);font-size:15px;opacity:.6;"></i>
+                    </div>
+                    <p class="pc-desc">${p.description}</p>
+                    <div class="pc-price">${p.price}<small>coins</small></div>
+                    <div class="pc-foot">
+                        <button class="btn btn-acc btn-block" onclick="buyProduct(${p.id}, '${p.name}')">
+                            <i class="fas fa-shopping-cart"></i> Contratar Agora
+                        </button>
+                    </div>
+                </div>`).join('');
+        });
+    }
+
+    // Guard anti-duplo-request
+    let _purchasing = false;
+
+    async function buyProduct(id, productName) {
+        showModal({
+            title: 'Confirmar Compra',
+            message: `Você está prestes a contratar o plano "${productName}". Deseja continuar?`,
+            type: 'confirm', icon: 'fa-shopping-cart',
+            onConfirm: () => {
+                showModal({
+                    title: 'Nome do Servidor',
+                    message: 'Como você quer chamar seu novo servidor?',
+                    type: 'prompt', placeholder: 'Ex: Meu Servidor de Minecraft', icon: 'fa-tag',
+                    onConfirm: (serverName) => processPurchase(id, serverName)
+                });
+            }
+        });
+    }
+
+    async function processPurchase(productId, serverName) {
+        if (_purchasing) return;
+        _purchasing = true;
+
+        await showLoading();
+        fetch('/api/buy-server', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, productId, serverName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideLoading(); _purchasing = false;
+            if (data.error) showModal({ title: 'Erro na Compra', message: data.error, icon: 'fa-times-circle' });
+            else {
+                // Atualizar coins com valor real do servidor
+                if (data.coinsRemaining !== undefined) {
+                    currentUser.coins = data.coinsRemaining;
+                } else if (data.coinsSpent) {
+                    currentUser.coins -= data.coinsSpent;
+                }
+                localStorage.setItem('ss_cache', JSON.stringify(currentUser));
+                document.getElementById('coins_home').innerText  = currentUser.coins;
+                document.getElementById('coins_home2').innerText = currentUser.coins;
+                showModal({ title: 'Servidor Criado!', message: data.message || 'Servidor criado com sucesso!', icon: 'fa-check-circle' });
+                loadMyServers();
+            }
+        })
+        .catch(err => { hideLoading(); _purchasing = false; showModal({ title: 'Erro', message: 'Erro ao processar a compra. Verifique sua conexão.', icon: 'fa-wifi' }); });
+    }
+
+    // ── ADMIN USERS ─────────────────────────────────
+    function loadUsers() {
+        fetch('/api/users').then(res => res.json()).then(users => {
+            document.getElementById('usersList').innerHTML = users.map(u => {
+                const roleBtn = u.role === 'admin'
+                    ? `<button class="btn btn-sm btn-ghost" onclick="setRole(${u.id},'member')">Tirar ADM</button>`
+                    : `<button class="btn btn-sm btn-acc" onclick="setRole(${u.id},'admin')">Dar ADM</button>`;
+                return `
+                <div class="item-card">
+                    <div>
+                        <div class="item-name">
+                            ${u.username.split('@')[0]}
+                            <span class="badge b-acc" style="margin-left:7px;">${u.role.toUpperCase()}</span>
+                        </div>
+                        <div class="item-sub">Saldo: ${u.coins} coins</div>
+                    </div>
+                    <div class="item-actions">
+                        <input id="c${u.id}" placeholder="Coins" style="width:86px;padding:6px 10px;padding-left:10px;">
+                        <button class="btn btn-sm btn-acc" onclick="addCoins(${u.id})" title="Adicionar coins"><i class="fas fa-coins"></i></button>
+                        <input id="pw${u.id}" type="password" placeholder="Nova senha" style="width:126px;padding:6px 10px;padding-left:10px;">
+                        <button class="btn btn-sm btn-ghost" onclick="updatePassword(${u.id})" title="Alterar senha"><i class="fas fa-key"></i></button>
+                        ${roleBtn}
+                        <button class="btn btn-sm btn-red" onclick="deleteUser(${u.id},'${u.username.split('@')[0]}')" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        });
+    }
+
+    function addCoins(id) {
+        const val = document.getElementById('c'+id).value;
+        if (!val) return showModal({ title: 'Atenção', message: 'Digite um valor para as moedas.', icon: 'fa-info-circle' });
+        fetch('/api/add-coins', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:id, coins:val }) })
+        .then(() => loadUsers());
+    }
+
+    function setRole(id, role) {
+        showModal({
+            title: 'Confirmar Cargo', message: `Deseja alterar o cargo para ${role.toUpperCase()}?`,
+            type: 'confirm', icon: 'fa-user-shield',
+            onConfirm: () => {
+                fetch('/api/set-role', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:id, role }) })
+                .then(res => {
+                    if (res.ok) loadUsers();
+                    else showModal({ title: 'Erro', message: 'Erro ao mudar cargo.', icon: 'fa-times-circle' });
+                });
+            }
+        });
+    }
+
+    function updatePassword(id) {
+        const val = document.getElementById('pw'+id).value;
+        if (!val || val.length < 8) return showModal({ title: 'Senha inválida', message: 'A nova senha deve ter no mínimo 8 caracteres.', icon: 'fa-key' });
+        showModal({
+            title: 'Alterar Senha', message: 'Deseja realmente alterar a senha deste usuário?',
+            type: 'confirm', icon: 'fa-key',
+            onConfirm: () => {
+                fetch('/api/update-password', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ userId:id, newPassword:val }) })
+                .then(res => res.json()).then(data => {
+                    if (data.error) showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+                    else { showModal({ title: 'Senha Atualizada!', message: 'Senha alterada com sucesso.', icon: 'fa-check-circle' }); loadUsers(); }
+                });
+            }
+        });
+    }
+
+    function deleteUser(id, name) {
+        showModal({
+            title: 'Excluir Usuário', message: `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`,
+            type: 'confirm', icon: 'fa-user-times',
+            onConfirm: () => {
+                fetch(`/api/delete-user/${id}`, { method:'DELETE' })
+                .then(res => res.json()).then(data => {
+                    if (data.error) showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+                    else { showModal({ title: 'Usuário Excluído', message: 'Usuário removido com sucesso!', icon: 'fa-check-circle' }); loadUsers(); }
+                });
+            }
+        });
+    }
+
+    // ── ADMIN PRODUCTS ─────────────────────────────────
+    function showCreateProduct() {
+        document.getElementById('productForm').style.display = 'block';
+        fetch('/api/nodes').then(res => res.json()).then(data => {
+            nodeSelect.innerHTML = data.map(n => `<option value="${n.attributes.id}">${n.attributes.name}</option>`).join('');
+        });
+        fetch('/api/eggs').then(res => res.json()).then(data => {
+            eggSelect.innerHTML = data.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        });
+    }
+
+    function createProduct() {
+        fetch('/api/create-product', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ name:p_name.value, description:p_desc.value, price:p_price.value, cpu:p_cpu.value, memory:p_memory.value, disk:p_disk.value, node:nodeSelect.value, egg:eggSelect.value })
+        }).then(() => {
+            showModal({ title: 'Produto Criado!', message: 'Produto adicionado ao catálogo.', icon: 'fa-check-circle' });
+            loadProducts();
+            document.getElementById('productForm').style.display = 'none';
+        });
+    }
+
+    function loadProducts() {
+        fetch('/api/products').then(res => res.json()).then(data => {
+            document.getElementById('productList').innerHTML = data.map(p => `
+                <div class="item-card">
+                    <div>
+                        <div class="item-name">${p.name}</div>
+                        <div class="item-sub">${p.price} coins · CPU: ${p.cpu}% · RAM: ${p.memory}MB · Disco: ${p.disk}MB</div>
+                    </div>
+                    <div class="item-actions">
+                        <span class="badge b-acc"><i class="fas fa-tag" style="margin-right:4px;"></i>${p.price} coins</span>
+                        <button class="btn btn-sm btn-red" onclick="deleteProduct(${p.id},'${p.name}')"><i class="fas fa-trash"></i> Apagar</button>
+                    </div>
+                </div>`).join('');
+        });
+    }
+
+    function deleteProduct(id, name) {
+        showModal({
+            title: 'Apagar Produto', message: `Deseja apagar "${name}"? Ele sumirá da loja imediatamente.`,
+            type: 'confirm', icon: 'fa-box-open',
+            onConfirm: () => {
+                fetch(`/api/delete-product/${id}`, { method:'DELETE' })
+                .then(res => res.json()).then(data => {
+                    if (data.error) showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+                    else { showModal({ title: 'Produto Apagado!', message: 'Produto removido com sucesso.', icon: 'fa-check-circle' }); loadProducts(); }
+                });
+            }
+        });
+    }
+
+    // ══════════════════════════════════════
+    // 🛒 LOJA DE COINS
+    // ══════════════════════════════════════
+
+    function loadCoinShop() {
+        const isAdmin = currentUser.role === 'admin';
+
+        // Mostrar barra e lista admin só para admin
+        const adminBar  = document.getElementById('coinAdminBar');
+        const adminList = document.getElementById('coinAdminList');
+        if (adminBar)  adminBar.style.display  = isAdmin ? 'flex' : 'none';
+        if (adminList) adminList.style.display = isAdmin ? 'block' : 'none';
+
+        // Carregar planos
+        fetch('/api/coin-plans').then(r => r.json()).then(plans => {
+            const grid = document.getElementById('coinPlanList');
+
+            if (plans.length === 0) {
+                grid.innerHTML = `<div class="empty" style="grid-column:1/-1;"><i class="fas fa-coins"></i><p>Nenhum plano disponível no momento.</p></div>`;
+            } else {
+                grid.innerHTML = plans.map(p => `
+                    <div class="coin-plan-card">
+                        <div class="cpc-title">${p.title}</div>
+                        ${p.description ? `<div class="cpc-desc">${p.description}</div>` : ''}
+                        <div class="cpc-coins"><i class="fas fa-coins"></i>${p.coins.toLocaleString('pt-BR')}</div>
+                        <div class="cpc-price">Por apenas <strong>R$ ${p.price.toFixed(2).replace('.',',')}</strong></div>
+                        <div class="pc-foot" style="margin-top:auto;">
+                            <button class="btn btn-acc btn-block" onclick="contractCoinPlan(${p.id})">
+                                Pague com PIX
+                            </button>
+                        </div>
+                    </div>`).join('');
+            }
+
+            // Lista admin
+            if (isAdmin) {
+                const adminPlanList = document.getElementById('coinAdminPlanList');
+                if (adminPlanList) {
+                    adminPlanList.innerHTML = plans.length === 0
+                        ? `<div class="empty"><i class="fas fa-coins"></i><p>Nenhum plano cadastrado.</p></div>`
+                        : plans.map(p => `
+                            <div class="item-card">
+                                <div>
+                                    <div class="item-name">${p.title}</div>
+                                    <div class="item-sub">R$ ${p.price.toFixed(2).replace('.',',')} → ${p.coins.toLocaleString('pt-BR')} coins</div>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="btn btn-sm btn-red" onclick="deleteCoinPlan(${p.id},'${p.title}')"><i class="fas fa-trash"></i> Apagar</button>
+                                </div>
+                            </div>`).join('');
+                }
+            }
+        });
+    }
+
+    function toggleCoinPlanForm() {
+        const f = document.getElementById('coinPlanForm');
+        f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function createCoinPlan() {
+        const title = document.getElementById('cp_title').value.trim();
+        const price = document.getElementById('cp_price').value;
+        const coins = document.getElementById('cp_coins').value;
+        const desc  = document.getElementById('cp_desc').value.trim();
+
+        if (!title || !price || !coins) {
+            return showModal({ title: 'Campos obrigatórios', message: 'Preencha título, preço e quantidade de coins.', icon: 'fa-exclamation-triangle' });
+        }
+
+        fetch('/api/create-coin-plan', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, price, coins, description: desc })
+        })
+        .then(r => r.json()).then(data => {
+            if (data.error) return showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+            showModal({ title: 'Plano Criado!', message: 'Plano adicionado à loja com sucesso.', icon: 'fa-check-circle' });
+            document.getElementById('coinPlanForm').style.display = 'none';
+            ['cp_title','cp_price','cp_coins','cp_desc'].forEach(id => { document.getElementById(id).value = ''; });
+            loadCoinShop();
+        });
+    }
+
+    function deleteCoinPlan(id, name) {
+        showModal({
+            title: 'Remover Plano', message: `Deseja remover o plano "${name}"?`,
+            type: 'confirm', icon: 'fa-coins',
+            onConfirm: () => {
+                fetch(`/api/delete-coin-plan/${id}`, { method: 'DELETE' })
+                .then(r => r.json()).then(data => {
+                    if (data.error) showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+                    else { showModal({ title: 'Removido!', message: 'Plano removido com sucesso.', icon: 'fa-check-circle' }); loadCoinShop(); }
+                });
+            }
+        });
+    }
+
+    // ══════════════════════════════════════
+    // 💳 MODAL PIX
+    // ══════════════════════════════════════
+
+    let _pixPaymentId    = null;
+    let _pixPollingTimer = null;
+    let _pixCoinsAmount  = 0;
+
+    async function contractCoinPlan(planId) {
+        // Gerar pagamento
+        try {
+            const res = await fetch('/api/buy-coins', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, planId })
+            });
+            const data = await res.json();
+
+            if (data.error) return showModal({ title: 'Erro', message: data.error, icon: 'fa-times-circle' });
+
+            // Preencher modal PIX
+            _pixPaymentId   = data.paymentId;
+            _pixCoinsAmount = data.coins;
+
+            document.getElementById('pixPlanTitle').innerText   = data.title;
+            document.getElementById('pixPriceVal').innerText    = `R$ ${data.price.toFixed(2).replace('.',',')}`;
+            document.getElementById('pixCoinsVal').innerText    = `${data.coins.toLocaleString('pt-BR')} 🪙`;
+            document.getElementById('pixCodeText').innerText    = data.pixCopyPaste;
+
+            // QR Code via base64
+            if (data.pixQrCodeBase64) {
+                document.getElementById('pixQrImg').src = `data:image/png;base64,${data.pixQrCodeBase64}`;
+                document.getElementById('pixQrWrap').style.display = 'flex';
+            } else {
+                document.getElementById('pixQrWrap').style.display = 'none';
+            }
+
+            // Reset estado visual
+            document.getElementById('pixStatusBar').className     = 'pix-status-bar';
+            document.getElementById('pixStatusBar').querySelector('.pix-status-text').innerText = 'Aguardando pagamento...';
+            document.getElementById('pixConfirmedMsg').style.display = 'none';
+            document.getElementById('pixQrSection').style.display    = 'block';
+
+            // Abrir modal
+            document.getElementById('pixOverlay').classList.add('active');
+
+            // Iniciar polling
+            startPixPolling();
+
+        } catch (err) {
+            showModal({ title: 'Erro', message: 'Não foi possível gerar o pagamento.', icon: 'fa-wifi' });
+        }
+    }
+
+    function startPixPolling() {
+        if (_pixPollingTimer) clearInterval(_pixPollingTimer);
+        // Checar a cada 4 segundos — mais responsivo
+        _pixPollingTimer = setInterval(checkPixPayment, 4000);
+        // Primeira checagem imediata após 2s
+        setTimeout(checkPixPayment, 2000);
+    }
+
+    async function checkPixPayment() {
+        if (!_pixPaymentId) return;
+        try {
+            const res = await fetch(`/api/check-payment/${_pixPaymentId}`);
+
+            // 404 = pagamento expirado e removido do JSON
+            if (res.status === 404) {
+                clearInterval(_pixPollingTimer);
+                _pixPollingTimer = null;
+                closePixModal();
+                showModal({ title: 'PIX Expirado', message: 'O tempo de pagamento expirou (5 minutos). Gere um novo PIX se desejar.', icon: 'fa-clock' });
+                return;
+            }
+
+            const data = await res.json();
+
+            if (data.status === 'approved') {
+                clearInterval(_pixPollingTimer);
+                _pixPollingTimer = null;
+
+                // Atualizar saldo local — usar valor real retornado pelo servidor
+                const coinsGanhos = data.coins || _pixCoinsAmount;
+                currentUser.coins += coinsGanhos;
+                localStorage.setItem('ss_cache', JSON.stringify(currentUser));
+                document.getElementById('coins_home').innerText  = currentUser.coins;
+                document.getElementById('coins_home2').innerText = currentUser.coins;
+
+                // Visual confirmado
+                const bar = document.getElementById('pixStatusBar');
+                bar.className = 'pix-status-bar confirmed';
+                bar.querySelector('.pix-status-text').innerText = 'Pagamento confirmado!';
+                document.getElementById('pixConfirmedMsg').style.display = 'block';
+                document.getElementById('pixConfirmedCoins').innerText = `+${coinsGanhos.toLocaleString('pt-BR')} coins adicionados à sua conta!`;
+                document.getElementById('pixQrSection').style.display = 'none';
+                document.getElementById('pixQrWrap').style.display = 'none';
+            }
+            // Se retornar retryable:true ou pending, continua o polling normalmente
+        } catch {
+            // Erro de rede — não parar o polling, tentar de novo no próximo ciclo
+        }
+    }
+
+    function closePixModal() {
+        if (_pixPollingTimer) { clearInterval(_pixPollingTimer); _pixPollingTimer = null; }
+        document.getElementById('pixOverlay').classList.remove('active');
+        _pixPaymentId = null;
+    }
+
+    function copyPix() {
+        const code = document.getElementById('pixCodeText').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.querySelector('.pix-copy-btn');
+            btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+            setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copiar'; }, 2000);
+        });
+    }
+</script>
+</body>
+</html>
